@@ -9,13 +9,18 @@ import com.iosProject.iosProject.entity.UserEntity;
 import com.iosProject.iosProject.repository.EnrollmentRepository;
 import com.iosProject.iosProject.repository.NurseryRepository;
 import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class EnrollmentServiceImpl implements EnrollmentService {
+
+    private static final Logger log = LoggerFactory.getLogger(EnrollmentServiceImpl.class);
+
     private final EnrollmentRepository enrollmentRepository;
+
     private final NurseryRepository nurseryRepository;
 
     public EnrollmentServiceImpl(EnrollmentRepository enrollmentRepository, NurseryRepository nurseryRepository) {
@@ -25,31 +30,27 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     public void enrollChild(Long nurseryId, Enrollment enrollment) {
-        NurseryEntity nurseryEntity = nurseryRepository.findById(nurseryId)
-                .orElseThrow(() -> new IllegalArgumentException("Nursery not found with ID: " + nurseryId));
-
+        log.info("Starting enrollChild");
+        NurseryEntity nurseryEntity = nurseryRepository.findById(nurseryId).orElseThrow(() -> new IllegalArgumentException("Nursery not found with ID: " + nurseryId));
         EnrollmentEntity enrollmentEntity = new EnrollmentEntity();
         enrollmentEntity.setNurseryId(nurseryEntity);
-
-
         ChildEntity childEntity = new ChildEntity();
         childEntity.setId(enrollment.getChildId());
-
         UserEntity userEntity = new UserEntity();
         userEntity.setId(enrollment.getUserId());
-
         enrollmentEntity.setChildId(childEntity);
         enrollmentEntity.setUserId(userEntity);
         enrollmentEntity.setSemester(enrollment.getSemester());
-
+        log.info("Calling enrollmentRepository save");
         enrollmentRepository.save(enrollmentEntity);
     }
 
     @Override
     public List<ChildWithNurseryId> getChildAndNurseryIdByChildId(Long childId) {
+        log.info("Starting getChildAndNurseryIdByChildId");
+        log.info("Calling enrollmentRepository findByChildId_Id");
         List<EnrollmentEntity> enrollments = enrollmentRepository.findByChildId_Id(childId);
         List<ChildWithNurseryId> result = new ArrayList<>();
-
         for (EnrollmentEntity enrollment : enrollments) {
             ChildWithNurseryId childWithId = new ChildWithNurseryId();
             childWithId.setChildId(enrollment.getChildId().getId());
@@ -57,7 +58,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
             childWithId.setNurseryId(enrollment.getNurseryId().getId());
             result.add(childWithId);
         }
-
+        log.info("Completed getChildAndNurseryIdByChildId");
         return result;
     }
 }

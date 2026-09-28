@@ -1,6 +1,5 @@
 package com.iosProject.iosProject.controllers;
 
-
 import com.iosProject.iosProject.entity.AreaEntity;
 import com.iosProject.iosProject.entity.CaseEntity;
 import com.iosProject.iosProject.service.area.AreaService;
@@ -9,13 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/v1/cases")
 public class CaseController {
+
+    private static final Logger log = LoggerFactory.getLogger(CaseController.class);
 
     private final CaseService caseService;
 

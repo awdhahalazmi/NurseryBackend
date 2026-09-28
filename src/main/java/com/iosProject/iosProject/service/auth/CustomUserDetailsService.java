@@ -7,9 +7,13 @@ import javassist.NotFoundException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
+    private static final Logger log = LoggerFactory.getLogger(CustomUserDetailsService.class);
 
     private final UserRepository userRepository;
 
@@ -19,17 +23,20 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public CustomUserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
+        log.info("Starting loadUserByUsername");
         try {
+            log.info("Completed loadUserByUsername");
             return buildCustomUserDetailsOfUsername(s);
         } catch (NotFoundException e) {
+            log.error("Failed loadUserByUsername", e);
             throw new RuntimeException(e);
         }
     }
 
     private CustomUserDetails buildCustomUserDetailsOfUsername(String username) throws NotFoundException {
-        UserEntity user=userRepository.findByUsername(username)
-                .orElseThrow();
-        if (user == null){
+        log.info("Starting buildCustomUserDetailsOfUsername");
+        UserEntity user = userRepository.findByUsername(username).orElseThrow();
+        if (user == null) {
             throw new NotFoundException("User not found");
         }
         CustomUserDetails userDetails = new CustomUserDetails();
@@ -37,8 +44,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         userDetails.setUserName(user.getUsername());
         userDetails.setPassword(user.getPassword());
         userDetails.setRole(user.getRole().getTitle().name());
-
+        log.info("Completed buildCustomUserDetailsOfUsername");
         return userDetails;
     }
 }
-

@@ -6,12 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/v1/area")
 public class AreaController {
+
+    private static final Logger log = LoggerFactory.getLogger(AreaController.class);
 
     private final AreaService areaService;
 
@@ -28,10 +31,14 @@ public class AreaController {
 
     @PostMapping("/admin/add_area")
     public ResponseEntity<AreaEntity> addArea(@RequestBody AreaEntity area) {
+        log.info("Starting addArea");
         try {
+            log.info("Calling areaService addArea");
             AreaEntity addedArea = areaService.addArea(area);
             return new ResponseEntity<>(addedArea, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
+            log.error("Failed addArea", e);
+            log.info("Completed addArea");
             return ResponseEntity.badRequest().build();
         }
     }

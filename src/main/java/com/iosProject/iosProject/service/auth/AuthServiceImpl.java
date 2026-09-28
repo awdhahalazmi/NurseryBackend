@@ -18,14 +18,24 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
-public class AuthServiceImpl implements AuthService{
+public class AuthServiceImpl implements AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
+
     private final AuthenticationManager authenticationManager;
+
     private final CustomUserDetailsService userDetailService;
+
     private final JWTUtil jwtUtil;
+
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private  final RoleRepository roleRepository;
+
+    private final RoleRepository roleRepository;
+
     private final UserRepository userRepository;
 
     public AuthServiceImpl(AuthenticationManager authenticationManager, CustomUserDetailsService userDetailService, JWTUtil jwtUtil, BCryptPasswordEncoder bCryptPasswordEncoder, RoleRepository roleRepository, UserRepository userRepository) {
@@ -39,54 +49,60 @@ public class AuthServiceImpl implements AuthService{
 
     @Override
     public void signup(CreateSignupRequest createSignupRequest) {
-        RoleEntity roleEntity= roleRepository.findRoleEntityByTitle(Roles.user.name())
-                .orElseThrow(() -> new BodyGuardException("no Roles Found"));;
-        UserEntity user= new UserEntity();
+        log.info("Starting signup");
+        RoleEntity roleEntity = roleRepository.findRoleEntityByTitle(Roles.user.name()).orElseThrow(() -> new BodyGuardException("no Roles Found"));
+        ;
+        UserEntity user = new UserEntity();
         user.setName(createSignupRequest.getName());
         user.setUsername(createSignupRequest.getUsername());
         user.setEmail(createSignupRequest.getEmail());
         user.setRole(roleEntity);
         user.setPassword(bCryptPasswordEncoder.encode(createSignupRequest.getPassword()));
+        log.info("Calling userRepository save");
         userRepository.save(user);
     }
 
-
     @Override
     public AuthenticationResponse login(CreateLoginRequest createLoginRequest) {
-        requiredNonNull(createLoginRequest.getUsername(),"username");
-        requiredNonNull(createLoginRequest.getPassword(),"password");
-        String username= createLoginRequest.getUsername().toLowerCase();
-        String password= createLoginRequest.getPassword();
-        authentication(username,password);
+        log.info("Starting login");
+        requiredNonNull(createLoginRequest.getUsername(), "username");
+        requiredNonNull(createLoginRequest.getPassword(), "password");
+        String username = createLoginRequest.getUsername().toLowerCase();
+        String password = createLoginRequest.getPassword();
+        authentication(username, password);
+        log.info("Calling userDetailService loadUserByUsername");
         CustomUserDetails userDetails = userDetailService.loadUserByUsername(username);
         String accessToken = jwtUtil.generateToken(userDetails);
         AuthenticationResponse response = new AuthenticationResponse();
         response.setId(userDetails.getId());
         response.setUsername(userDetails.getUsername());
         response.setRole(userDetails.getRole());
-        response.setToken("Bearer "+ accessToken);
+        response.setToken("Bearer " + accessToken);
+        log.info("Completed login");
         return response;
-
-
-
     }
 
     @Override
     public void logout(LogoutResponse logoutResponse) {
-        requiredNonNull(logoutResponse.getToken(),"Token");
-
+        log.info("Starting logout");
+        requiredNonNull(logoutResponse.getToken(), "Token");
     }
-    private void requiredNonNull(Object obj,String name){
-        if(obj == null || obj.toString().isEmpty()){
-            throw new BodyGuardException(name+"can not be empty");
+
+    private void requiredNonNull(Object obj, String name) {
+        if (obj == null || obj.toString().isEmpty()) {
+            throw new BodyGuardException(name + "can not be empty");
         }
     }
-    private void authentication(String username, String password){
+
+    private void authentication(String username, String password) {
+        log.info("Starting authentication");
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username,password));
-        }catch (BodyGuardException e){
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+        } catch (BodyGuardException e) {
+            log.error("Failed authentication", e);
             throw new BodyGuardException("Incorrect password");
-        }catch (AuthenticationServiceException e){
+        } catch (AuthenticationServiceException e) {
+            log.error("Failed authentication", e);
             throw new UserNotFoundException("Incorrect username");
         }
     }
